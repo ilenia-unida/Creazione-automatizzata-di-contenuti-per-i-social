@@ -1,0 +1,416 @@
+{
+  "name": "Flusso 7",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "sheetId": "1IquLAYDUEfevQoVluMALtEfL67i7JA8ibIJzsCujv0k",
+        "range": "'Foglio1'!A:C",
+        "options": {}
+      },
+      "name": "Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        688
+      ],
+      "id": "6fe40868-1460-4736-ac02-afe0cc4588f6",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RHIbICEy16TbxeVv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Crea un post breve basato su questo argomento:\nArgomento: {{$json[\"Argomento\"]}}\nIdea per il post: {{$json[\"IdeaPerPost\"]}}\n\nRispondi **solo** con questo JSON valido, senza testo extra:\n{\n  \"Titolo\": \"Titolo breve (max 80 caratteri)\",\n  \"Contenuto\": \"Testo del post in un paragrafo\"\n}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        672
+      ],
+      "id": "802a8f8f-317c-4ea0-9f59-195e32b7b74d",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  // Pulizia base dei campi\n  const argomento = item.json['Argomento']?.trim() || '';\n  const ideaPerPost = item.json['Idea per il Post']?.trim() || '';\n  const stato = (item.json['Stato Pubblicazione']?.trim() || 'no').toLowerCase() === 'sì' ? 'Sì' : 'No';\n  \n  // ID dinamico per Notion (puoi usarlo per titolo o proprietà)\n  const notionID = `articolo-${Date.now()}-${Math.floor(Math.random() * 1000)}`;\n\n  return {\n    json: {\n      Argomento: argomento,\n      IdeaPerPost: ideaPerPost,\n      StatoPubblicazione: stato,\n      NotionID: notionID\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        688
+      ],
+      "id": "421732bc-cd72-44e5-ba2d-e47c086f4907",
+      "name": "Prepare Data"
+    },
+    {
+      "parameters": {
+        "content": "============\nAttenzione\n============\n\n1: per far partire il flusso  clicca ovviamente su workflow.\n2. Solo poi metti il flusso active. \n3.Aspetta il tempo necessario per la creazione e pubblicazione.\n4. Appena sul nodo notion vedi che compare un numerino  che è uguale al numero di righe sul tuo foglio sheets disattiva il flusso. Altrimenti nonostante  il workflow si sia concluso con successo il splitbatches  si riattiverà grazie a Schedule trigger pubblicando altri contenuti cadenzati.  Idealmente ne pubblicherebbe solo uno al giorno ma  capisci che  per rendere chiaro il funzionamento  ho dovuto velocizzarlo e ne pubblica uno al minuto.\n5 qualche piccola accortezza.  Il mio sheet ha tre colonne con  intestazione Argomento (Colonna A), Idea per il Post (colonna b) e Stato Pubblicazione (colonna c). La nomenclatura potrebbe servirti se ti da noia il codice.  Utilizza l'id di sheet invece dell'url. Inoltre i valori in colonna c sotto l'intestazione devono essere \"no\" ( no senza virgolette) per ogni riga ( If controlla che  risultino non pubblicati)",
+        "height": 576,
+        "width": 768,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        96,
+        -704
+      ],
+      "typeVersion": 1,
+      "id": "207d676c-27c4-46ae-bdb8-458cac0d640a",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Cron → Avvia il flusso automaticamente ogni minuto (per test) o secondo lo schedule impostato."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -608,
+        848
+      ],
+      "typeVersion": 1,
+      "id": "8c30c73f-7901-4656-8f2b-642bed0b7fd1",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "Google Sheets → Legge tutte le righe del foglio con Argomento, Idea per il Post"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -304,
+        848
+      ],
+      "typeVersion": 1,
+      "id": "849217d9-be83-44fb-9272-ccbe0ce8d7ca",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Prepare Data → Pulisce i dati estratti da Sheets e crea campi uniformi per il flusso."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -16,
+        848
+      ],
+      "typeVersion": 1,
+      "id": "954620a7-eb8b-4ec9-81fb-668ea3cc6cd7",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "SplitInBatches → Invia una riga alla volta ai nodi successivi, gestendo le iterazioni."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        288,
+        848
+      ],
+      "typeVersion": 1,
+      "id": "f1879b84-23ba-4cf4-8e69-60fd6ac4b7ce",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "IF - Non pubblicato → Controlla se la riga non è già stata pubblicata (StatoPubblicazione != \"Sì\")."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        576,
+        864
+      ],
+      "typeVersion": 1,
+      "id": "2d6078bc-201b-4106-8312-cab8b4210fe1",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "AI Agent1 → Genera Titolo e Contenuto del post usando Gemini / modello AI."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        864,
+        464
+      ],
+      "typeVersion": 1,
+      "id": "966df1c3-c0ba-4021-84ee-03360bef6226",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "Google Gemini Chat Model → Modello AI collegato a AI Agent1 per generare testo.",
+        "height": 176,
+        "width": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        832,
+        1056
+      ],
+      "typeVersion": 1,
+      "id": "dbb1d220-97f7-4b25-84aa-6429fa2be9cb",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "Format for Notion → Pulisce e struttura l’output JSON dell’AI per Notion."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1136,
+        848
+      ],
+      "typeVersion": 1,
+      "id": "e9a4da78-2c2d-42aa-8a59-1b169334c738",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "Notion - Crea pagina → Pubblica il post su Notion con Titolo e Contenuto."
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1440,
+        848
+      ],
+      "typeVersion": 1,
+      "id": "f0dc5ff8-cfe0-43f7-8093-013e1f13d493",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "SplitInBatches1",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        400,
+        672
+      ],
+      "id": "6918e209-c555-4a4b-9661-7538cd9b6360"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"StatoPubblicazione\"]}}",
+              "operation": "notEqual",
+              "value2": "Sì"
+            }
+          ]
+        }
+      },
+      "name": "IF - Non pubblicato1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        640,
+        672
+      ],
+      "id": "f048e48d-459b-4024-8f62-46ee548a2a45"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        880,
+        880
+      ],
+      "id": "e70517ac-48dc-492e-b3e0-6676c38515e3",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "6xAGhA9zHQNia7ZG",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pageId": {
+          "__rl": true,
+          "value": "28060f6f7cd080eebde0c1e1c3bb6d33",
+          "mode": "id"
+        },
+        "title": "={{$json[\"TitoloPulito\"]}}\n\n\n\n\n",
+        "blockUi": {
+          "blockValues": [
+            {
+              "textContent": "={{$json[\"ContenutoPulito\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Notion - Crea pagina1",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        672
+      ],
+      "id": "697f08c7-36e6-4b2c-aef6-328461ba80de",
+      "credentials": {
+        "notionApi": {
+          "id": "lVLfpA1OUedM5XPg",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n    let parsed = {};\n    try {\n        let raw = item.json.output || \"{}\";\n        \n        // Rimuove eventuali ```json ... ``` o altri backtick\n        raw = raw.replace(/```json\\s*([\\s\\S]*?)```/g, '$1').trim();\n        raw = raw.replace(/```/g, '').trim(); // ulteriore pulizia\n        \n        parsed = JSON.parse(raw);\n    } catch(e) {\n        parsed = {};\n    }\n\n    return {\n        json: {\n            TitoloPulito: parsed.Titolo ? parsed.Titolo.trim() : \"Titolo mancante\",\n            ContenutoPulito: parsed.Contenuto ? parsed.Contenuto.trim() : \"Nessun contenuto\"\n        }\n    };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        672
+      ],
+      "id": "de04f15c-0628-419a-8305-afdb0f8726f1",
+      "name": "Format for Notion1"
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        }
+      },
+      "name": "Schedule trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        688
+      ],
+      "id": "661b5e5f-b9a0-47b0-a6ea-799d8aa9b350"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Format for Notion1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitInBatches1": {
+      "main": [
+        [
+          {
+            "node": "IF - Non pubblicato1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Non pubblicato1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "SplitInBatches1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format for Notion1": {
+      "main": [
+        [
+          {
+            "node": "Notion - Crea pagina1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule trigger": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d65927cc-56d2-481d-8c68-7ab298feaaf9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3eade08974c65ea0e714de990b1c4d4deb3f525e0d19f574aa90538cacfd42e4"
+  },
+  "id": "yhLfBSJN6WASk4gZ",
+  "tags": []
+}
